@@ -9,9 +9,15 @@ app.use(express.json())
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const cors = require('cors')
-app.use(cors())
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+)
 
-let db
+let db;
 
 const dbPath = path.join(__dirname, 'tasksApp.db')
 
@@ -27,34 +33,13 @@ const initializeDb = async () => {
 }
 initializeDb()
 
-const authenticationToken = async (request, response, next) => {
-  let jwtToken
-  let header = request.headers['authorization']
-  if (header !== undefined) {
-    jwtToken = header.split(' ')[1]
-  }
-  if (jwtToken === undefined) {
-    response.status(401)
-    response.send('Invalid JWT Token')
-  } else {
-    jwt.verify(jwtToken, 'SECREAT_KEY', (error, payload) => {
-      if (error) {
-        response.status(401)
-        response.send('Invalid JWT Token')
-      } else {
-        next()
-      }
-    })
-  }
-}
-
-app.get('/tasks', authenticationToken, async (request, response) => {
+app.get('/tasks', async (request, response) => {
   const getTasks = `SELECT * FROM tasks`
   const tasksArray = await db.all(getTasks)
   response.send(tasksArray)
 })
 
-app.post('/tasks', authenticationToken, async (request, response) => {
+app.post('/tasks', async (request, response) => {
   const {title, description, status, due_date, user_id} = request.body
   const postTasks = `INSERT INTO tasks(title,description,status,due_date,user_id) VALUES(
     '${title}','${description}','${status}','${due_date}',${user_id});`
@@ -62,14 +47,14 @@ app.post('/tasks', authenticationToken, async (request, response) => {
   response.send('Task Added')
 })
 
-app.delete('/tasks/:id', authenticationToken, async (request, response) => {
+app.delete('/tasks/:id', async (request, response) => {
   const {id} = request.params
   const deleteTask = `DELETE FROM tasks WHERE id=${id};`
   await db.run(deleteTask)
   response.send('Task Deleted')
 })
 
-app.put('/tasks/:id', authenticationToken, async (request, response) => {
+app.put('/tasks/:id', async (request, response) => {
   const {id} = request.params
   const {title, description, due_date} = request.body
   let updateTaskTitle = `
@@ -82,7 +67,7 @@ app.put('/tasks/:id', authenticationToken, async (request, response) => {
   response.send('Task updated')
 })
 
-app.put('/tasks/status/:id', authenticationToken, async (request, response) => {
+app.put('/tasks/status/:id', async (request, response) => {
   const {id} = request.params
   const {status} = request.body
   let updateTask = `
@@ -115,6 +100,12 @@ app.post('/signup', async (request, response) => {
     response.status(400)
     response.send('User already exists')
   }
+})
+
+app.get('/users', async (request, response) => {
+  const getUsers = `SELECT * FROM users`
+  const usersArray = await db.all(getUsers)
+  response.send(usersArray)
 })
 
 app.post('/login', async (request, response) => {
