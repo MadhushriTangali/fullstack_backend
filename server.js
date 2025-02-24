@@ -9,15 +9,9 @@ app.use(express.json())
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const cors = require('cors')
-app.use(
-  cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  }),
-)
+app.use(cors())
 
-let db;
+let db
 
 const dbPath = path.join(__dirname, 'tasksApp.db')
 
@@ -117,7 +111,7 @@ app.post('/login', async (request, response) => {
   let dbUser = await db.get(getUserQuery)
   if (dbUser === undefined) {
     response.status(400)
-    response.send('Invalid user')
+    response.send({message: 'Invalid user'})
   } else {
     let isPasswordMatched = await bcrypt.compare(password, dbUser.password)
     if (isPasswordMatched === true) {
@@ -126,7 +120,7 @@ app.post('/login', async (request, response) => {
       response.send({jwtToken})
     } else {
       response.status(400)
-      response.send('Invalid password')
+      response.send({message: 'Invalid password'})
     }
   }
 })
